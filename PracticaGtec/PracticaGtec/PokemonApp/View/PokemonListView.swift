@@ -32,6 +32,11 @@ struct PokemonListView: View {
             }
             .navigationTitle("Pokédex")
             .navigationBarTitleDisplayMode(.large)
+            .searchable(
+                text: $viewModel.searchText,
+                placement: .navigationBarDrawer(displayMode: .automatic),
+                prompt: "Buscar Pokémon"
+            )
             .task {
                 await viewModel.loadPokemons()
             }
@@ -66,7 +71,7 @@ struct PokemonListView: View {
                 
                 Button {
                     Task {
-                        await viewModel.loadPokemons()
+                        await viewModel.refresh()
                     }
                 } label: {
                     Text("Reintentar")
@@ -81,40 +86,86 @@ struct PokemonListView: View {
             .padding()
         } else {
             ScrollView {
-                LazyVStack(spacing: 14) {
-                    ForEach(viewModel.pokemons) { pokemon in
-                        NavigationLink {
-                            PokemonDetailView(
-                                pokemonURL: pokemon.url,
-                                viewModel: AppContainer.makePokemonDetailViewModel()
-                            )
-                        } label: {
-                            PokemonRowView(pokemon: pokemon)
-                        }
-                        .buttonStyle(.borderless)
-                        .onAppear {
-                            if pokemon.id == viewModel.pokemons.last?.id {
-                                Task {
-                                    await viewModel.loadMore()
+                VStack(spacing: 12) {
+                    typeFilterBar
+                    
+                    LazyVStack(spacing: 14) {
+                        ForEach(viewModel.displayedPokemons) { pokemon in
+                            NavigationLink {
+                                PokemonDetailView(
+                                    pokemonURL: pokemon.url,
+                                    viewModel: AppContainer.makePokemonDetailViewModel()
+                                )
+                            } label: {
+                                PokemonRowView(pokemon: pokemon)
+                            }
+                            .buttonStyle(.borderless)
+                            .onAppear {
+                                if pokemon.id == viewModel.displayedPokemons.last?.id {
+                                    Task {
+                                        await viewModel.loadMore()
+                                    }
                                 }
                             }
                         }
-                    }
-                    
-                    if viewModel.isLoadingMore {
-                        HStack {
-                            Spacer()
-                            ProgressView()
-                            Spacer()
+                        
+                        if viewModel.isLoadingMore {
+                            HStack {
+                                Spacer()
+                                ProgressView()
+                                Spacer()
+                            }
+                            .padding(.vertical)
                         }
-                        .padding(.vertical)
                     }
+                    .padding(.vertical)
                 }
-                .padding(.vertical)
             }
             .refreshable {
                 await viewModel.refresh()
             }
+        }
+    }
+    
+    private var typeFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(viewModel.availableTypes, id: \.self) { type in
+                    
+                    let color = type == "All"
+                    ? Color.gray
+                    : PokemonTypeColor.color(for: type.lowercased())
+                                        
+                    let textColor: Color = type.lowercased() == "electric"
+                    ? .gray
+                    : (viewModel.selectedType == type ? .white : color)
+                                        
+                    Button {
+                        Task {
+                            await viewModel.selectType(type)
+                        }
+                    } label: {
+                        Text(type)
+                            .font(.subheadline.weight(.semibold))
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(
+                                    viewModel.selectedType == type
+                                        ? color
+                                        : color.opacity(0.15)
+                                    )
+                                .foregroundStyle(textColor)
+                                .overlay(
+                                    Capsule()
+                                        .stroke(color.opacity(0.25), lineWidth: 1)
+                                )
+                                .clipShape(Capsule())
+                    }
+                 
+                }
+            }
+            .padding(.horizontal)
+            .animation(.spring(), value: viewModel.selectedType)
         }
     }
 }

@@ -14,6 +14,7 @@ struct PracticaGtecApp: App {
             PokemonListView(
                 viewModel: AppContainer.makePokemonListViewModel()
             )
+            .preferredColorScheme(.light)
         }
     }
 }

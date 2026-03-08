@@ -13,10 +13,17 @@ Aplicación desarrollada en SwiftUI que consume la API pública PokeAPI para mos
 - Clean Architecture (Data / Domain / Presentation)
 
 ## Funcionalidades
+
 - Listado de Pokémon
 - Detalle de Pokémon
-- Carga de imágenes
-- Consumo de API REST
+- Carga de imágenes desde la API
+- Consumo de API REST (PokeAPI)
+- Búsqueda de Pokémon por nombre o número
+- Filtro de Pokémon por tipo
+- Chips visuales de tipos con color dinámico
+- Paginación / infinite scroll
+- Pull to refresh
+- Manejo de estados de carga y error
 
 ## Arquitectura
 

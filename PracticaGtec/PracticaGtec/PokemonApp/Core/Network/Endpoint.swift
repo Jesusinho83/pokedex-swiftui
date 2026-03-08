@@ -11,6 +11,8 @@ enum Endpoint {
 
     case pokemonList(limit: Int, offset: Int)
     case pokemonDetail(urlString: String)
+    case pokemonByType(type: String)
+
 
     var url: URL? {
         switch self {
@@ -22,6 +24,9 @@ enum Endpoint {
 
         case .pokemonDetail(let urlString):
             return URL(string: urlString)
+            
+        case .pokemonByType(let type):
+                    return URL(string: "https://pokeapi.co/api/v2/type/\(type.lowercased())")
         }
     }
 }

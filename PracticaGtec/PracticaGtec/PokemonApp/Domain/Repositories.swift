@@ -9,12 +9,8 @@ import Foundation
 
 protocol PokemonRepository {
     
-    func fetchPokemonListResponse(
-        limit: Int,
-        offset: Int
-    ) async throws -> PokemoListResponseModel
+    func fetchPokemonListResponse(limit: Int,offset: Int) async throws -> PokemoListResponseModel
     
-    func fetchPokemonDetail(
-        urlString: String
-    ) async throws -> PokemonDetailModel
+    func fetchPokemonDetail(urlString: String) async throws -> PokemonDetailModel
+    func fetchPokemonsByType(type: String) async throws -> [PokemonListItemModel]
 }
