@@ -11,6 +11,7 @@ import Combine
 final class PokemonListViewModel: ObservableObject {
     
     @Published var pokemons: [PokemonListItemModel] = []
+    @Published var allPokemonsIndex: [PokemonListItemModel] = []
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
@@ -31,15 +32,13 @@ final class PokemonListViewModel: ObservableObject {
     }
     
     var displayedPokemons: [PokemonListItemModel] {
-        let baseList = pokemons
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
         
-        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            return baseList
+        guard !query.isEmpty else {
+            return pokemons
         }
         
-        let query = searchText.lowercased()
-        
-        return baseList.filter {
+        return allPokemonsIndex.filter {
             $0.name.lowercased().contains(query) ||
             String($0.id).contains(query)
         }
@@ -52,11 +51,21 @@ final class PokemonListViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            let response = try await repository.fetchPokemonListResponse(
+            async let paginatedResponse = repository.fetchPokemonListResponse(
                 limit: limit,
                 offset: offset
             )
+            
+            async let fullIndexResponse = repository.fetchPokemonListResponse(
+                limit: 2000,
+                offset: 0
+            )
+            
+            let response = try await paginatedResponse
+            let allResponse = try await fullIndexResponse
+            
             pokemons = response.results
+            allPokemonsIndex = allResponse.results.sorted { $0.id < $1.id }
             canLoadMore = response.next != nil
         } catch {
             errorMessage = error.localizedDescription
@@ -67,6 +76,7 @@ final class PokemonListViewModel: ObservableObject {
     
     func loadMore() async {
         guard selectedType == "All" else { return }
+        guard searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
         guard !isLoadingMore, !isLoading, canLoadMore else { return }
         
         isLoadingMore = true
