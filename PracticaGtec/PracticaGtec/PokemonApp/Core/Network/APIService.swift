@@ -7,7 +7,7 @@
 
 import Foundation
 
-enum NetworkError: LocalizedError  {
+enum NetworkError: LocalizedError {
     case invalidURL
     case invalidResponse
     case badStatusCode(Int)
@@ -15,30 +15,29 @@ enum NetworkError: LocalizedError  {
     case unknown
 
     var errorDescription: String? {
-            switch self {
-            case .invalidURL:
-                return "La URL no es válida."
-            case .invalidResponse:
-                return "La respuesta del servidor no es válida."
-            case .badStatusCode(let code):
-                return "El servidor respondió con código \(code)."
-            case .decodingError:
-                return "No se pudo procesar la información."
-            case .unknown:
-                return "Ocurrió un error inesperado."
-            }
+        switch self {
+        case .invalidURL:
+            return "La URL no es válida."
+        case .invalidResponse:
+            return "La respuesta del servidor no es válida."
+        case .badStatusCode(let code):
+            return "El servidor respondió con código \(code)."
+        case .decodingError:
+            return "No se pudo procesar la información."
+        case .unknown:
+            return "Ocurrió un error inesperado."
         }
+    }
 }
 
-
 protocol APIServiceProtocol {
-    func fetch<T: Decodable>(urlString: String) async throws -> T
+    func fetch<T: Decodable>(endpoint: Endpoint) async throws -> T
 }
 
 final class APIService: APIServiceProtocol {
     
-    func fetch<T: Decodable>(urlString: String) async throws -> T {
-        guard let url = URL(string: urlString) else {
+    func fetch<T: Decodable>(endpoint: Endpoint) async throws -> T {
+        guard let url = endpoint.url else {
             throw NetworkError.invalidURL
         }
         
@@ -47,14 +46,14 @@ final class APIService: APIServiceProtocol {
         do {
             (data, response) = try await URLSession.shared.data(from: url)
         } catch {
-            throw  NetworkError.unknown
+            throw NetworkError.unknown
         }
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw NetworkError.invalidResponse
         }
         
-        guard 200...299 ~= httpResponse.statusCode else {
+        guard 200..<300 ~= httpResponse.statusCode else {
             throw NetworkError.badStatusCode(httpResponse.statusCode)
         }
                 

@@ -8,25 +8,54 @@
 import Foundation
 
 protocol PokemonServiceProtocol {
-    func fetchPokemonListResponse(limit: Int, offset: Int) async throws -> PokemoListResponseModel
-    func fetchPokemonDetail(urlString: String) async throws -> PokemonDetailModel
+    
+    func fetchPokemonListResponse(
+        limit: Int,
+        offset: Int
+    ) async throws -> PokemoListResponseModel
+    
+    func fetchPokemonDetail(
+        urlString: String
+    ) async throws -> PokemonDetailModel
 }
 
 final class PokemonService: PokemonServiceProtocol {
+    
     private let apiService: APIServiceProtocol
     
     init(apiService: APIServiceProtocol = APIService()) {
         self.apiService = apiService
     }
     
-    func fetchPokemonListResponse(limit: Int = 20, offset: Int = 0) async throws -> PokemoListResponseModel {
-        let endpoint = "https://pokeapi.co/api/v2/pokemon?limit=\(limit)&offset=\(offset)"
-        let response: PokemoListResponseModel = try await apiService.fetch(urlString: endpoint)
+    func fetchPokemonListResponse(
+        limit: Int = 20,
+        offset: Int = 0
+    ) async throws -> PokemoListResponseModel {
+        
+        let endpoint = Endpoint.pokemonList(
+            limit: limit,
+            offset: offset
+        )
+        
+        let response: PokemoListResponseModel = try await apiService.fetch(
+            endpoint: endpoint
+        )
+        
         return response
     }
     
-    func fetchPokemonDetail(urlString: String) async throws -> PokemonDetailModel {
-        let detail: PokemonDetailModel = try await apiService.fetch(urlString: urlString)
+    func fetchPokemonDetail(
+        urlString: String
+    ) async throws -> PokemonDetailModel {
+        
+        let endpoint = Endpoint.pokemonDetail(
+            urlString: urlString
+        )
+        
+        let detail: PokemonDetailModel = try await apiService.fetch(
+            endpoint: endpoint
+        )
+        
         return detail
     }
 }
