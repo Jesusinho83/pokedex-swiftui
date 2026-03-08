@@ -18,8 +18,30 @@ final class PokemonListViewModel: ObservableObject {
     
     @Published var searchText: String = ""
     @Published var selectedType: String = "All"
-    
-    let availableTypes: [String] = ["All", "Electric", "Fire", "Water", "Grass"]
+    @Published var isShowingMoreTypes = false
+
+    let primaryTypes: [String] = ["All", "Fire", "Water", "Grass", "Electric"]
+    let allAvailableTypes: [String] = [
+        "All",
+        "Normal",
+        "Fire",
+        "Water",
+        "Grass",
+        "Electric",
+        "Ice",
+        "Fighting",
+        "Poison",
+        "Ground",
+        "Flying",
+        "Psychic",
+        "Bug",
+        "Rock",
+        "Ghost",
+        "Dragon",
+        "Dark",
+        "Steel",
+        "Fairy"
+    ]
     
     private let repository: PokemonRepository
     

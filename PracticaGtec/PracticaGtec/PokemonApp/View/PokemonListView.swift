@@ -8,13 +8,45 @@
 import SwiftUI
 
 struct PokemonListView: View {
-    
+    @Namespace private var typeBarNamespace
     @StateObject private var viewModel: PokemonListViewModel
     
     private let columns = [
         GridItem(.flexible(), spacing: 14),
         GridItem(.flexible(), spacing: 14)
     ]
+    private func iconName(for type: String) -> String {
+        switch type.lowercased() {
+        case "all": return "square.grid.2x2.fill"
+        case "fire": return "flame.fill"
+        case "water": return "drop.fill"
+        case "grass": return "leaf.fill"
+        case "electric": return "bolt.fill"
+        default: return "line.3.horizontal.decrease.circle.fill"
+        }
+    }
+
+    private func colorForBottomBarItem(_ type: String) -> Color {
+        if type == "More" {
+            if viewModel.selectedType == "All" || viewModel.primaryTypes.contains(viewModel.selectedType) {
+                return .secondary
+            } else {
+                return PokemonTypeColor.color(for: viewModel.selectedType.lowercased())
+            }
+        }
+        
+        return type == "All"
+            ? .gray
+            : PokemonTypeColor.color(for: type.lowercased())
+    }
+
+    private func isSelectedBottomBarItem(_ type: String) -> Bool {
+        if type == "More" {
+            return !viewModel.primaryTypes.contains(viewModel.selectedType) && viewModel.selectedType != "All"
+        }
+        
+        return viewModel.selectedType == type
+    }
     
     init(viewModel: PokemonListViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
@@ -47,6 +79,17 @@ struct PokemonListView: View {
             }
             .task {
                 await viewModel.loadPokemons()
+            }
+            .sheet(isPresented: $viewModel.isShowingMoreTypes) {
+                MoreTypesSheet(
+                    selectedType: viewModel.selectedType,
+                    allTypes: viewModel.allAvailableTypes.filter { !viewModel.primaryTypes.contains($0) && $0 != "All" }
+                ) { selectedType in
+                    Task {
+                        await viewModel.selectType(selectedType)
+                        viewModel.isShowingMoreTypes = false
+                    }
+                }
             }
         }
     }
@@ -135,34 +178,44 @@ struct PokemonListView: View {
     }
     
     private var bottomTypeBar: some View {
-        HStack(spacing: 0) {
-            ForEach(viewModel.availableTypes, id: \.self) { type in
-                let color = type == "All"
-                    ? Color.gray
-                    : PokemonTypeColor.color(for: type.lowercased())
-                
-                let isSelected = viewModel.selectedType == type
+        let items = viewModel.primaryTypes + ["More"]
+        
+        return HStack(spacing: 0) {
+            ForEach(items, id: \.self) { type in
+                let isSelected = isSelectedBottomBarItem(type)
                 
                 Button {
-                    Task {
-                        await viewModel.selectType(type)
+                    if type == "More" {
+                        viewModel.isShowingMoreTypes = true
+                    } else {
+                        Task {
+                            await viewModel.selectType(type)
+                        }
                     }
                 } label: {
                     VStack(spacing: 6) {
-                        Circle()
-                            .fill(isSelected ? color : color.opacity(0.25))
-                            .frame(width: 10, height: 10)
+                        Image(systemName: iconName(for: type))
+                            .font(.system(size: 18, weight: .semibold))
                         
                         Text(type)
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(isSelected ? color : .secondary)
+                            .font(.caption2.weight(.semibold))
+                            .lineLimit(1)
                     }
+                    .foregroundStyle(isSelected ? .gray : .secondary)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 10)
+                    .background {
+                        if isSelected {
+                            Capsule()
+                                .fill(.white)
+                                .padding(.horizontal, 6)
+                        }
+                    }
                 }
+                .buttonStyle(.plain)
             }
         }
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 10)
         .padding(.top, 8)
         .padding(.bottom, 10)
         .background(.ultraThinMaterial)
