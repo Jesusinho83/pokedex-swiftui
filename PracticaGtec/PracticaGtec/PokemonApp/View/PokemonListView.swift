@@ -11,6 +11,11 @@ struct PokemonListView: View {
     
     @StateObject private var viewModel: PokemonListViewModel
     
+    private let columns = [
+        GridItem(.flexible(), spacing: 14),
+        GridItem(.flexible(), spacing: 14)
+    ]
+    
     init(viewModel: PokemonListViewModel) {
         _viewModel = StateObject(wrappedValue: viewModel)
     }
@@ -34,9 +39,12 @@ struct PokemonListView: View {
             .navigationBarTitleDisplayMode(.large)
             .searchable(
                 text: $viewModel.searchText,
-                placement: .navigationBarDrawer(displayMode: .automatic),
+                placement: .navigationBarDrawer(displayMode: .always),
                 prompt: "Buscar Pokémon"
             )
+            .safeAreaInset(edge: .bottom) {
+                bottomTypeBar
+            }
             .task {
                 await viewModel.loadPokemons()
             }
@@ -86,40 +94,39 @@ struct PokemonListView: View {
             .padding()
         } else {
             ScrollView {
-                VStack(spacing: 12) {
-                    typeFilterBar
-                    
-                    LazyVStack(spacing: 14) {
-                        ForEach(viewModel.displayedPokemons) { pokemon in
-                            NavigationLink {
-                                PokemonDetailView(
-                                    pokemonURL: pokemon.url,
-                                    viewModel: AppContainer.makePokemonDetailViewModel()
-                                )
-                            } label: {
-                                PokemonRowView(pokemon: pokemon)
-                            }
-                            .buttonStyle(.borderless)
-                            .onAppear {
-                                if pokemon.id == viewModel.displayedPokemons.last?.id {
-                                    Task {
-                                        await viewModel.loadMore()
-                                    }
+                LazyVGrid(columns: columns, spacing: 16) {
+                    ForEach(viewModel.displayedPokemons) { pokemon in
+                        NavigationLink {
+                            PokemonDetailView(
+                                pokemonURL: pokemon.url,
+                                viewModel: AppContainer.makePokemonDetailViewModel()
+                            )
+                        } label: {
+                            PokemonRowView(pokemon: pokemon)
+                        }
+                        .buttonStyle(.plain)
+                        .onAppear {
+                            if pokemon.id == viewModel.displayedPokemons.last?.id {
+                                Task {
+                                    await viewModel.loadMore()
                                 }
                             }
                         }
-                        
-                        if viewModel.isLoadingMore {
-                            HStack {
-                                Spacer()
-                                ProgressView()
-                                Spacer()
-                            }
-                            .padding(.vertical)
-                        }
                     }
-                    .padding(.vertical)
+                    
+                    if viewModel.isLoadingMore {
+                        HStack {
+                            Spacer()
+                            ProgressView()
+                            Spacer()
+                        }
+                        .gridCellColumns(2)
+                        .padding(.vertical)
+                    }
                 }
+                .padding(.horizontal)
+                .padding(.top, 12)
+                .padding(.bottom, 90)
             }
             .refreshable {
                 await viewModel.refresh()
@@ -127,45 +134,40 @@ struct PokemonListView: View {
         }
     }
     
-    private var typeFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 10) {
-                ForEach(viewModel.availableTypes, id: \.self) { type in
-                    
-                    let color = type == "All"
+    private var bottomTypeBar: some View {
+        HStack(spacing: 0) {
+            ForEach(viewModel.availableTypes, id: \.self) { type in
+                let color = type == "All"
                     ? Color.gray
                     : PokemonTypeColor.color(for: type.lowercased())
-                                        
-                    let textColor: Color = type.lowercased() == "electric"
-                    ? .gray
-                    : (viewModel.selectedType == type ? .white : color)
-                                        
-                    Button {
-                        Task {
-                            await viewModel.selectType(type)
-                        }
-                    } label: {
-                        Text(type)
-                            .font(.subheadline.weight(.semibold))
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(
-                                    viewModel.selectedType == type
-                                        ? color
-                                        : color.opacity(0.15)
-                                    )
-                                .foregroundStyle(textColor)
-                                .overlay(
-                                    Capsule()
-                                        .stroke(color.opacity(0.25), lineWidth: 1)
-                                )
-                                .clipShape(Capsule())
+                
+                let isSelected = viewModel.selectedType == type
+                
+                Button {
+                    Task {
+                        await viewModel.selectType(type)
                     }
-                 
+                } label: {
+                    VStack(spacing: 6) {
+                        Circle()
+                            .fill(isSelected ? color : color.opacity(0.25))
+                            .frame(width: 10, height: 10)
+                        
+                        Text(type)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(isSelected ? color : .secondary)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 10)
                 }
             }
-            .padding(.horizontal)
-            .animation(.spring(), value: viewModel.selectedType)
+        }
+        .padding(.horizontal, 8)
+        .padding(.top, 8)
+        .padding(.bottom, 10)
+        .background(.ultraThinMaterial)
+        .overlay(alignment: .top) {
+            Divider()
         }
     }
 }
