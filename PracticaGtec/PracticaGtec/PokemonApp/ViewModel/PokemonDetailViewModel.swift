@@ -10,14 +10,15 @@ import Combine
 
 @MainActor
 final class PokemonDetailViewModel: ObservableObject {
+    
     @Published var pokemon: PokemonDetailModel?
     @Published var isLoading = false
     @Published var errorMessage: String?
     
-    private let service: PokemonServiceProtocol
+    private let repository: PokemonRepository
     
-    init(service: PokemonServiceProtocol = PokemonService()) {
-        self.service = service
+    init(repository: PokemonRepository) {
+        self.repository = repository
     }
     
     func loadPokemonDetail(from urlString: String) async {
@@ -25,7 +26,9 @@ final class PokemonDetailViewModel: ObservableObject {
         errorMessage = nil
         
         do {
-            pokemon = try await service.fetchPokemonDetail(urlString: urlString)
+            pokemon = try await repository.fetchPokemonDetail(
+                urlString: urlString
+            )
         } catch {
             errorMessage = error.localizedDescription
         }

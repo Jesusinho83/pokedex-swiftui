@@ -9,38 +9,42 @@ import Combine
 
 @MainActor
 final class PokemonListViewModel: ObservableObject {
+
     @Published var pokemons: [PokemonListItemModel] = []
     @Published var isLoading = false
     @Published var isLoadingMore = false
     @Published var errorMessage: String?
-    
-    private let service: PokemonServiceProtocol
-    
+
+    private let repository: PokemonRepository
+
     private var offset = 0
     private let limit = 20
     private var canLoadMore = true
-    
-    init(service: PokemonServiceProtocol = PokemonService()) {
-        self.service = service
+
+    init(repository: PokemonRepository) {
+        self.repository = repository
     }
-    
+
     func loadPokemons() async {
         guard pokemons.isEmpty else { return }
-        
+
         isLoading = true
         errorMessage = nil
-        
+
         do {
-            let response = try await service.fetchPokemonListResponse(limit: limit, offset: offset)
+            let response = try await repository.fetchPokemonListResponse(
+                limit: limit,
+                offset: offset
+            )
             pokemons = response.results
             canLoadMore = response.next != nil
         } catch {
             errorMessage = error.localizedDescription
         }
-        
+
         isLoading = false
     }
-    
+
     func loadMore() async {
         guard !isLoadingMore, !isLoading, canLoadMore else { return }
 
@@ -49,10 +53,14 @@ final class PokemonListViewModel: ObservableObject {
 
         do {
             let nextOffset = offset + limit
-            let response = try await service.fetchPokemonListResponse(limit: limit, offset: nextOffset)
+
+            let response = try await repository.fetchPokemonListResponse(
+                limit: limit,
+                offset: nextOffset
+            )
 
             offset = nextOffset
-            
+
             let newItems = response.results.filter { newPokemon in
                 !pokemons.contains(where: { $0.id == newPokemon.id })
             }
@@ -66,7 +74,7 @@ final class PokemonListViewModel: ObservableObject {
 
         isLoadingMore = false
     }
-    
+
     func refresh() async {
         offset = 0
         canLoadMore = true

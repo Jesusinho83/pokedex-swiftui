@@ -8,7 +8,12 @@
 import SwiftUI
 
 struct PokemonListView: View {
-    @StateObject private var viewModel = PokemonListViewModel()
+    
+    @StateObject private var viewModel: PokemonListViewModel
+    
+    init(viewModel: PokemonListViewModel) {
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
     
     var body: some View {
         NavigationStack {
@@ -79,7 +84,10 @@ struct PokemonListView: View {
                 LazyVStack(spacing: 14) {
                     ForEach(viewModel.pokemons) { pokemon in
                         NavigationLink {
-                            PokemonDetailView(pokemonURL: pokemon.url)
+                            PokemonDetailView(
+                                pokemonURL: pokemon.url,
+                                viewModel: AppContainer.makePokemonDetailViewModel()
+                            )
                         } label: {
                             PokemonRowView(pokemon: pokemon)
                         }

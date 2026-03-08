@@ -11,7 +11,9 @@ import SwiftUI
 struct PracticaGtecApp: App {
     var body: some Scene {
         WindowGroup {
-            PokemonListView()
+            PokemonListView(
+                viewModel: AppContainer.makePokemonListViewModel()
+            )
         }
     }
 }

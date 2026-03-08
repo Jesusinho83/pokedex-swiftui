@@ -8,8 +8,19 @@
 import SwiftUI
 
 struct PokemonDetailView: View {
+    
     let pokemonURL: String
-    @StateObject private var viewModel = PokemonDetailViewModel()
+    
+    @StateObject private var viewModel: PokemonDetailViewModel
+    
+    init(
+        pokemonURL: String,
+        viewModel: PokemonDetailViewModel
+    ) {
+        self.pokemonURL = pokemonURL
+        _viewModel = StateObject(wrappedValue: viewModel)
+    }
+    
     private var backgroundColor: Color {
         guard let pokemon = viewModel.pokemon else {
             return Color(.systemGray6)
@@ -30,7 +41,7 @@ struct PokemonDetailView: View {
                 endPoint: .bottom
             )
             .ignoresSafeArea()
-
+            
             content
         }
         .navigationBarTitleDisplayMode(.inline)
@@ -79,12 +90,10 @@ struct PokemonDetailView: View {
     }
     
     private func headerView(_ pokemon: PokemonDetailModel) -> some View {
-
         let mainType = pokemon.types.first?.type.name ?? "normal"
         let backgroundColor = PokemonTypeColor.color(for: mainType)
-
+        
         return VStack(spacing: 14) {
-
             AsyncImage(url: URL(string: pokemon.sprites.other.officialArtwork.frontDefault ?? "")) { image in
                 image
                     .resizable()
@@ -95,13 +104,12 @@ struct PokemonDetailView: View {
             } placeholder: {
                 ProgressView()
             }
-
+            
             Text("#\(String(format: "%03d", pokemon.id))")
                 .foregroundStyle(.secondary)
-
+            
             Text(pokemon.name.capitalized)
                 .font(.largeTitle.bold())
-
         }
         .padding()
         .background(
@@ -157,18 +165,23 @@ struct PokemonDetailView: View {
                             .font(.subheadline.weight(.semibold))
                             .foregroundStyle(.secondary)
                     }
-                }
-
+                    
                     GeometryReader { geometry in
                         ZStack(alignment: .leading) {
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(Color.gray.opacity(0.15))
                                 .frame(height: 10)
-
+                            
                             RoundedRectangle(cornerRadius: 10)
                                 .fill(Color.black)
                                 .frame(
-                                    width: max(12, min(CGFloat(stat.baseStat) / 150 * geometry.size.width, geometry.size.width)),
+                                    width: max(
+                                        12,
+                                        min(
+                                            CGFloat(stat.baseStat) / 150 * geometry.size.width,
+                                            geometry.size.width
+                                        )
+                                    ),
                                     height: 10
                                 )
                         }
@@ -176,6 +189,7 @@ struct PokemonDetailView: View {
                     .frame(height: 10)
                 }
             }
+        }
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
