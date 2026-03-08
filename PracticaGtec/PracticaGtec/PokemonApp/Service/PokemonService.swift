@@ -13,6 +13,9 @@ protocol PokemonServiceProtocol {
     
     func fetchPokemonDetail(urlString: String) async throws -> PokemonDetailModel
     func fetchPokemonsByType(type: String) async throws -> PokemonTypeResponseModel
+    
+    func fetchPokemonSpecies(urlString: String) async throws -> PokemonSpeciesModel
+    func fetchEvolutionChain(urlString: String) async throws -> EvolutionChainModel
 }
 
 final class PokemonService: PokemonServiceProtocol {
@@ -55,4 +58,16 @@ final class PokemonService: PokemonServiceProtocol {
            let response: PokemonTypeResponseModel = try await apiService.fetch(endpoint: endpoint)
            return response
        }
+    
+    func fetchPokemonSpecies(urlString: String) async throws -> PokemonSpeciesModel {
+        let endpoint = Endpoint.pokemonSpecies(urlString: urlString)
+        let response: PokemonSpeciesModel = try await apiService.fetch(endpoint: endpoint)
+        return response
+    }
+    
+    func fetchEvolutionChain(urlString: String) async throws -> EvolutionChainModel {
+        let endpoint = Endpoint.evolutionChain(urlString: urlString)
+        let response: EvolutionChainModel = try await apiService.fetch(endpoint: endpoint)
+        return response
+    }
 }

@@ -2,7 +2,7 @@
 //  MoreTypesSheet.swift
 //  PracticaGtec
 //
-//  Created by Elizabeth Nieves on 08/03/26.
+//  Created by Jesus Grimaldo on 08/03/26.
 //
 
 import SwiftUI

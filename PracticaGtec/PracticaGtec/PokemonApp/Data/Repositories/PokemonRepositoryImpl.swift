@@ -38,4 +38,12 @@ final class PokemonRepositoryImpl: PokemonRepository {
                 )
             }
         }
+    
+    func fetchPokemonSpecies(urlString: String) async throws -> PokemonSpeciesModel {
+        try await service.fetchPokemonSpecies(urlString: urlString)
+    }
+        
+    func fetchEvolutionChain(urlString: String) async throws -> EvolutionChainModel {
+        try await service.fetchEvolutionChain(urlString: urlString)
+    }
 }

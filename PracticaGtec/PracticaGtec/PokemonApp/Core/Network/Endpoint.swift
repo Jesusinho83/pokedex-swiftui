@@ -12,6 +12,8 @@ enum Endpoint {
     case pokemonList(limit: Int, offset: Int)
     case pokemonDetail(urlString: String)
     case pokemonByType(type: String)
+    case pokemonSpecies(urlString: String)
+    case evolutionChain(urlString: String)
 
 
     var url: URL? {
@@ -26,7 +28,13 @@ enum Endpoint {
             return URL(string: urlString)
             
         case .pokemonByType(let type):
-                    return URL(string: "https://pokeapi.co/api/v2/type/\(type.lowercased())")
+            return URL(string: "https://pokeapi.co/api/v2/type/\(type.lowercased())")
+            
+        case .pokemonSpecies(let urlString):
+            return URL(string: urlString)
+                   
+        case .evolutionChain(let urlString):
+            return URL(string: urlString)
         }
     }
 }

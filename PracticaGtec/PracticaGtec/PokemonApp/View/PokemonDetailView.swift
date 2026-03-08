@@ -4,7 +4,6 @@
 //
 //  Created by Jesus Grimaldo on 06/03/26.
 //
-
 import SwiftUI
 
 struct PokemonDetailView: View {
@@ -12,6 +11,7 @@ struct PokemonDetailView: View {
     let pokemonURL: String
     
     @StateObject private var viewModel: PokemonDetailViewModel
+    @State private var selectedEvolutionCard: EvolutionCardDetailModel?
     
     init(
         pokemonURL: String,
@@ -44,6 +44,24 @@ struct PokemonDetailView: View {
             
             content
         }
+        .overlay {
+            if let card = viewModel.selectedEvolutionCard {
+                EvolutionFloatingCard(
+                    evolution: card,
+                    onClose: {
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            viewModel.selectedEvolutionCard = nil
+                        }
+                    }
+                )
+                .transition(.opacity.combined(with: .scale(scale: 0.92)))
+                .zIndex(10)
+            }
+        }
+        .animation(
+            .spring(response: 0.35, dampingFraction: 0.85),
+            value: viewModel.selectedEvolutionCard != nil
+        )
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await viewModel.loadPokemonDetail(from: pokemonURL)
@@ -81,8 +99,19 @@ struct PokemonDetailView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 20) {
                     headerView(pokemon)
-                    infoCard(pokemon)
+                    quickInfoCard(pokemon)
+                    
+                    if let flavorText = viewModel.flavorText {
+                        flavorTextCard(flavorText)
+                    }
+                    
+                    abilitiesCard(pokemon)
                     statsCard(pokemon)
+                    movesCard(pokemon)
+                    
+                    if !viewModel.evolutionStages.isEmpty {
+                        evolutionsCard
+                    }
                 }
                 .padding()
             }
@@ -106,10 +135,26 @@ struct PokemonDetailView: View {
             }
             
             Text("#\(String(format: "%03d", pokemon.id))")
+                .font(.subheadline.weight(.semibold))
                 .foregroundStyle(.secondary)
             
             Text(pokemon.name.capitalized)
                 .font(.largeTitle.bold())
+            
+            HStack(spacing: 8) {
+                ForEach(pokemon.types) { typeEntry in
+                    let typeName = typeEntry.type.name
+                    let chipColor = PokemonTypeColor.color(for: typeName)
+                    
+                    Text(typeName.capitalized)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(chipColor.opacity(0.2))
+                        .foregroundStyle(typeName == "electric" ? .black : chipColor)
+                        .clipShape(Capsule())
+                }
+            }
         }
         .padding()
         .background(
@@ -118,7 +163,7 @@ struct PokemonDetailView: View {
         )
     }
     
-    private func infoCard(_ pokemon: PokemonDetailModel) -> some View {
+    private func quickInfoCard(_ pokemon: PokemonDetailModel) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("Información")
                 .font(.title3.weight(.semibold))
@@ -128,29 +173,60 @@ struct PokemonDetailView: View {
                 Spacer()
                 infoItem(title: "Peso", value: "\(pokemon.weight)")
             }
+            
+            HStack {
+                infoItem(title: "Base Exp", value: "\(pokemon.baseExperience)")
+                Spacer()
+                infoItem(title: "Forma", value: pokemon.forms.first?.name.capitalized ?? "-")
+            }
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
-        )
+        .background(cardBackground)
     }
     
-    private func infoItem(title: String, value: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            Text(title)
-                .font(.caption)
-                .foregroundStyle(.secondary)
+    private func flavorTextCard(_ text: String) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Descripción")
+                .font(.title3.weight(.semibold))
             
-            Text(value)
-                .font(.headline)
+            Text(text)
+                .font(.body)
+                .foregroundStyle(.primary)
         }
+        .padding()
+        .background(cardBackground)
+    }
+    
+    private func abilitiesCard(_ pokemon: PokemonDetailModel) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Habilidades")
+                .font(.title3.weight(.semibold))
+            
+            ForEach(pokemon.abilities) { item in
+                HStack {
+                    Text(item.ability.name.capitalized)
+                        .font(.subheadline.weight(.medium))
+                    
+                    Spacer()
+                    
+                    if item.isHidden {
+                        Text("Hidden")
+                            .font(.caption.weight(.semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(Color.black.opacity(0.08))
+                            .clipShape(Capsule())
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(cardBackground)
     }
     
     private func statsCard(_ pokemon: PokemonDetailModel) -> some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Stats")
+            Text("Estadísticas")
                 .font(.title3.weight(.semibold))
             
             ForEach(pokemon.stats) { stat in
@@ -173,7 +249,7 @@ struct PokemonDetailView: View {
                                 .frame(height: 10)
                             
                             RoundedRectangle(cornerRadius: 10)
-                                .fill(Color.black)
+                                .fill(backgroundColor)
                                 .frame(
                                     width: max(
                                         12,
@@ -191,11 +267,116 @@ struct PokemonDetailView: View {
             }
         }
         .padding()
-        .background(
-            RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
-        )
+        .background(cardBackground)
+    }
+    
+    private func movesCard(_ pokemon: PokemonDetailModel) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Moves")
+                .font(.title3.weight(.semibold))
+            
+            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                ForEach(Array(pokemon.moves.prefix(6))) { move in
+                    Text(move.move.name.capitalized)
+                        .font(.caption.weight(.semibold))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                        .background(Color.black.opacity(0.06))
+                        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+            }
+        }
+        .padding()
+        .background(cardBackground)
+    }
+    
+    private var evolutionsCard: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            
+            Text("Evoluciones")
+                .font(.title3.weight(.semibold))
+            
+            ScrollView(.horizontal, showsIndicators: false) {
+                
+                HStack(spacing: 14) {
+                    
+                    ForEach(viewModel.evolutionStages) { evolution in
+                        
+                        Button {
+                            Task {
+                                await viewModel.loadEvolutionPreview(for: evolution)
+                            }
+                        } label: {
+                            
+                            ZStack {
+                                
+                                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                                    .fill(Color.gray.opacity(0.15))
+                                    .frame(width: 110, height: 120)
+                                
+                                Circle()
+                                    .fill(Color.white.opacity(0.15))
+                                    .frame(width: 60, height: 60)
+                                    .offset(x: 25, y: -35)
+                                
+                                VStack(spacing: 6) {
+                                    
+                                    AsyncImage(url: evolution.imageURL) { phase in
+                                        switch phase {
+                                            
+                                        case .empty:
+                                            ProgressView()
+                                                .frame(width: 70, height: 70)
+                                            
+                                        case .success(let image):
+                                            image
+                                                .resizable()
+                                                .scaledToFit()
+                                                .frame(width: 75, height: 75)
+                                                .shadow(color: .black.opacity(0.15), radius: 6, x: 0, y: 3)
+                                            
+                                        case .failure:
+                                            Image(systemName: "photo")
+                                                .frame(width: 70, height: 70)
+                                            
+                                        @unknown default:
+                                            EmptyView()
+                                        }
+                                    }
+                                    
+                                    Text(evolution.name)
+                                        .font(.caption.weight(.semibold))
+                                        .lineLimit(1)
+                                }
+                            }
+                            .frame(width: 110, height: 120)
+                            .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 4)
+                            
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+        .padding()
+        .background(cardBackground)
+    }
+    private func infoItem(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(title)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            Text(value)
+                .font(.headline)
+        }
+    }
+    
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 24, style: .continuous)
+            .fill(Color(.systemBackground))
+            .shadow(color: .black.opacity(0.05), radius: 10, x: 0, y: 4)
     }
     
     private func formattedStatName(_ name: String) -> String {

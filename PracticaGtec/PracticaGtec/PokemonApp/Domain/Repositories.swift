@@ -13,4 +13,7 @@ protocol PokemonRepository {
     
     func fetchPokemonDetail(urlString: String) async throws -> PokemonDetailModel
     func fetchPokemonsByType(type: String) async throws -> [PokemonListItemModel]
+    
+    func fetchPokemonSpecies(urlString: String) async throws -> PokemonSpeciesModel
+    func fetchEvolutionChain(urlString: String) async throws -> EvolutionChainModel
 }
